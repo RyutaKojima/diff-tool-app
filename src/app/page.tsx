@@ -55,24 +55,24 @@ export default function Home() {
 
   const renderFileContent = (content: string) => {
     return content.split('\n').map((line, index) => (
-      <div key={index} className="font-mono text-sm">
+      <div key={index} className="font-mono text-sm text-gray-800 leading-relaxed">
         {line}
       </div>
     ));
   };
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen p-8 bg-gray-50">
       <main className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">ファイル比較ツール</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">ファイル比較ツール</h1>
         
         <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
-            <h2 className="text-xl font-semibold mb-4">ファイル1</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">ファイル1</h2>
             <input
               type="file"
               onChange={(e) => handleFileUpload(e, 1)}
-              className="block w-full text-sm text-gray-500
+              className="block w-full text-sm text-gray-700
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-full file:border-0
                 file:text-sm file:font-semibold
@@ -82,11 +82,11 @@ export default function Home() {
           </div>
           
           <div>
-            <h2 className="text-xl font-semibold mb-4">ファイル2</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">ファイル2</h2>
             <input
               type="file"
               onChange={(e) => handleFileUpload(e, 2)}
-              className="block w-full text-sm text-gray-500
+              className="block w-full text-sm text-gray-700
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-full file:border-0
                 file:text-sm file:font-semibold
@@ -99,57 +99,57 @@ export default function Home() {
         <button
           onClick={compareFiles}
           disabled={!file1 || !file2}
-          className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed mb-8"
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed mb-8 hover:bg-blue-700 transition-colors"
         >
           比較する
         </button>
 
         {diffResult.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">比較結果</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">比較結果</h2>
             <div className="grid grid-cols-3 gap-4">
               {/* 元のファイル */}
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <h3 className="text-lg font-semibold mb-2">元のファイル</h3>
+              <div className="border rounded-lg p-4 bg-white shadow-sm">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">元のファイル</h3>
                 <div 
                   ref={refs.original}
                   onScroll={() => handleScroll(refs.original)}
-                  className="overflow-auto max-h-[600px]"
+                  className="overflow-auto max-h-[600px] bg-gray-50 rounded p-2"
                 >
                   {renderFileContent(file1)}
                 </div>
               </div>
 
               {/* 変更後のファイル */}
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <h3 className="text-lg font-semibold mb-2">変更後のファイル</h3>
+              <div className="border rounded-lg p-4 bg-white shadow-sm">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">変更後のファイル</h3>
                 <div 
                   ref={refs.modified}
                   onScroll={() => handleScroll(refs.modified)}
-                  className="overflow-auto max-h-[600px]"
+                  className="overflow-auto max-h-[600px] bg-gray-50 rounded p-2"
                 >
                   {renderFileContent(file2)}
                 </div>
               </div>
 
               {/* 差分 */}
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <h3 className="text-lg font-semibold mb-2">差分</h3>
+              <div className="border rounded-lg p-4 bg-white shadow-sm">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">差分</h3>
                 <div 
                   ref={refs.diff}
                   onScroll={() => handleScroll(refs.diff)}
-                  className="overflow-auto max-h-[600px]"
+                  className="overflow-auto max-h-[600px] bg-gray-50 rounded p-2"
                 >
                   {diffResult.map((part, index) => (
                     <pre
                       key={index}
                       className={`${
                         part.added
-                          ? 'bg-green-100'
+                          ? 'bg-green-100 text-green-900'
                           : part.removed
-                          ? 'bg-red-100'
-                          : 'bg-white'
-                      } p-2 my-1 rounded font-mono text-sm`}
+                          ? 'bg-red-100 text-red-900'
+                          : 'bg-white text-gray-800'
+                      } p-2 my-1 rounded font-mono text-sm leading-relaxed`}
                     >
                       {part.value}
                     </pre>
