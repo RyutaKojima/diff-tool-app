@@ -85,6 +85,7 @@ export default function Home() {
   const [file1, setFile1] = useState<string>('');
   const [file2, setFile2] = useState<string>('');
   const [diffResult, setDiffResult] = useState<Change[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { refs, handleScroll, handleMouseEnter, handleMouseLeave, activePane } = useScrollSync();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fileNumber: number) => {
@@ -99,10 +100,16 @@ export default function Home() {
     }
   };
 
-  const compareFiles = () => {
+  const compareFiles = async () => {
     if (!file1 || !file2) return;
+    setIsLoading(true);
+    
+    // 非同期処理をシミュレート
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
     const diff = diffLines(file1, file2);
     setDiffResult(diff);
+    setIsLoading(false);
   };
 
   const renderFileContent = (content: string) => {
@@ -150,10 +157,19 @@ export default function Home() {
 
         <button
           onClick={compareFiles}
-          disabled={!file1 || !file2}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed mb-8 hover:bg-blue-700 transition-colors"
+          disabled={!file1 || !file2 || isLoading}
+          className={`bg-blue-600 text-white px-6 py-2 rounded-lg transition-all duration-200 ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+          } ${!file1 || !file2 ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          比較する
+          {isLoading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              処理中...
+            </div>
+          ) : (
+            '比較する'
+          )}
         </button>
 
         {diffResult.length > 0 && (
