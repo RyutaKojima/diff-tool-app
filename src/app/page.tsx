@@ -12,28 +12,80 @@ const useScrollSync = () => {
     diff: useRef<HTMLDivElement>(null),
   };
 
-  const handleScroll = (sourceRef: React.RefObject<HTMLDivElement | null>) => {
+  const [activePane, setActivePane] = useState<keyof typeof refs | null>(null);
+
+  const handleScroll = (sourceRef: React.RefObject<HTMLDivElement | null>, diffResult: Change[]) => {
     if (!sourceRef.current) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = sourceRef.current;
-    const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+    const sourceElement = sourceRef.current;
+    const sourceScrollTop = sourceElement.scrollTop;
+    const sourceLineHeight = parseInt(getComputedStyle(sourceElement).lineHeight);
+    const sourceFirstVisibleLine = Math.floor(sourceScrollTop / sourceLineHeight);
 
-    Object.values(refs).forEach((ref) => {
-      if (ref !== sourceRef && ref.current) {
-        const targetScrollTop = scrollPercentage * (ref.current.scrollHeight - ref.current.clientHeight);
-        ref.current.scrollTop = targetScrollTop;
+    // 差分の内容に基づいて対応する行を計算
+    let originalLineCount = 0;
+    let modifiedLineCount = 0;
+    let diffLineCount = 0;
+    let targetOriginalLine = 0;
+    let targetModifiedLine = 0;
+    let targetDiffLine = 0;
+
+    for (const part of diffResult) {
+      const lines = part.value.split('\n').length - 1;
+      
+      if (sourceRef === refs.original) {
+        if (originalLineCount <= sourceFirstVisibleLine && sourceFirstVisibleLine < originalLineCount + lines) {
+          targetModifiedLine = modifiedLineCount;
+          targetDiffLine = diffLineCount;
+          break;
+        }
+      } else if (sourceRef === refs.modified) {
+        if (modifiedLineCount <= sourceFirstVisibleLine && sourceFirstVisibleLine < modifiedLineCount + lines) {
+          targetOriginalLine = originalLineCount;
+          targetDiffLine = diffLineCount;
+          break;
+        }
+      } else if (sourceRef === refs.diff) {
+        if (diffLineCount <= sourceFirstVisibleLine && sourceFirstVisibleLine < diffLineCount + lines) {
+          targetOriginalLine = originalLineCount;
+          targetModifiedLine = modifiedLineCount;
+          break;
+        }
       }
-    });
+
+      if (!part.added) originalLineCount += lines;
+      if (!part.removed) modifiedLineCount += lines;
+      diffLineCount += lines;
+    }
+
+    // 各ペインのスクロール位置を更新
+    if (refs.original.current && refs.original !== sourceRef) {
+      refs.original.current.scrollTop = targetOriginalLine * sourceLineHeight;
+    }
+    if (refs.modified.current && refs.modified !== sourceRef) {
+      refs.modified.current.scrollTop = targetModifiedLine * sourceLineHeight;
+    }
+    if (refs.diff.current && refs.diff !== sourceRef) {
+      refs.diff.current.scrollTop = targetDiffLine * sourceLineHeight;
+    }
   };
 
-  return { refs, handleScroll };
+  const handleMouseEnter = (pane: keyof typeof refs) => {
+    setActivePane(pane);
+  };
+
+  const handleMouseLeave = () => {
+    setActivePane(null);
+  };
+
+  return { refs, handleScroll, handleMouseEnter, handleMouseLeave, activePane };
 };
 
 export default function Home() {
   const [file1, setFile1] = useState<string>('');
   const [file2, setFile2] = useState<string>('');
   const [diffResult, setDiffResult] = useState<Change[]>([]);
-  const { refs, handleScroll } = useScrollSync();
+  const { refs, handleScroll, handleMouseEnter, handleMouseLeave, activePane } = useScrollSync();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fileNumber: number) => {
     const file = e.target.files?.[0];
@@ -113,7 +165,9 @@ export default function Home() {
                 <h3 className="text-lg font-semibold mb-2 text-gray-800">元のファイル</h3>
                 <div 
                   ref={refs.original}
-                  onScroll={() => handleScroll(refs.original)}
+                  onScroll={() => activePane === 'original' && handleScroll(refs.original, diffResult)}
+                  onMouseEnter={() => handleMouseEnter('original')}
+                  onMouseLeave={handleMouseLeave}
                   className="overflow-auto max-h-[600px] bg-gray-50 rounded p-2"
                 >
                   {renderFileContent(file1)}
@@ -125,7 +179,9 @@ export default function Home() {
                 <h3 className="text-lg font-semibold mb-2 text-gray-800">変更後のファイル</h3>
                 <div 
                   ref={refs.modified}
-                  onScroll={() => handleScroll(refs.modified)}
+                  onScroll={() => activePane === 'modified' && handleScroll(refs.modified, diffResult)}
+                  onMouseEnter={() => handleMouseEnter('modified')}
+                  onMouseLeave={handleMouseLeave}
                   className="overflow-auto max-h-[600px] bg-gray-50 rounded p-2"
                 >
                   {renderFileContent(file2)}
@@ -137,7 +193,9 @@ export default function Home() {
                 <h3 className="text-lg font-semibold mb-2 text-gray-800">差分</h3>
                 <div 
                   ref={refs.diff}
-                  onScroll={() => handleScroll(refs.diff)}
+                  onScroll={() => activePane === 'diff' && handleScroll(refs.diff, diffResult)}
+                  onMouseEnter={() => handleMouseEnter('diff')}
+                  onMouseLeave={handleMouseLeave}
                   className="overflow-auto max-h-[600px] bg-gray-50 rounded p-2"
                 >
                   {diffResult.map((part, index) => (
@@ -160,53 +218,6 @@ export default function Home() {
           </div>
         )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
